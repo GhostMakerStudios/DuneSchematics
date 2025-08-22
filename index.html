@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dune Unique Schematic Checklist</title>
+  <meta name="theme-color" content="#c8893a" />
+  <style>
+    :root{
+      --sand:#f3e2c2;
+      --dune:#e8c48a;
+      --amber:#c8893a;
+      --spice:#9b5b1a;
+      --ink:#2b2a28;
+      --sky:#efe8db;
+      --ok:#2e7d32;
+      --muted:#8a816f;
+      --card:#fffaf1;
+      --shadow: 0 10px 30px rgba(155,91,26,.15);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 600px at 50% -200px, #ffe9c7 0%, transparent 70%),
+        linear-gradient(180deg, var(--sky) 0%, var(--sand) 40%, var(--dune) 100%);
+      min-height:100%;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+    .app{
+      width:min(920px,100%);
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      border:1px solid #eadcc4;
+    }
+    header{
+      padding:24px 20px 12px 20px;
+      background:linear-gradient(180deg,#f9e7c9, #f2d7aa);
+      border-bottom:1px solid #eadcc4;
+    }
+    h1{
+      margin:0 0 6px 0;
+      font-size:clamp(22px,3.4vw,32px);
+      letter-spacing:.3px;
+    }
+    .subtitle{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .controls{
+      display:flex; gap:10px; padding:14px 20px; flex-wrap:wrap;
+      background:#fff9ed;
+      border-bottom:1px solid #f0e4cd;
+    }
+    .controls input[type=text]{
+      flex:1 1 320px;
+      padding:12px 14px; border:1px solid #e6dcc9; border-radius:12px;
+      background:#fff; outline:none;
+    }
+    .btn{
+      padding:12px 14px; border:1px solid #e6dcc9; background:#fff; border-radius:12px;
+      cursor:pointer; transition:transform .06s ease, box-shadow .12s ease;
+    }
+    .btn:hover{ box-shadow:0 6px 16px rgba(200,137,58,.18) }
+    .btn:active{ transform:translateY(1px) }
+    .btn.primary{ background:var(--amber); color:white; border-color:#b37631 }
+    .btn.ghost{ background:#fffaf2 }
+    .progress{
+      padding:12px 20px; display:flex; align-items:center; gap:12px; background:#fff;
+      border-bottom:1px solid #f0e4cd;
+    }
+    .bar{
+      position:relative; height:10px; flex:1; background:#f3e7d1; border-radius:999px; overflow:hidden;
+    }
+    .bar>i{
+      position:absolute; inset:0 100% 0 0; background:linear-gradient(90deg,#c8893a,#9b5b1a);
+      transition:inset .25s ease; border-radius:999px;
+    }
+    .pct{ width:52px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted) }
+
+    .list{ padding:8px 12px 20px 12px }
+    .item{
+      display:grid; grid-template-columns:28px 1fr auto; align-items:center;
+      gap:12px; padding:12px; margin:10px 8px; background:white; border:1px solid #eee2cd;
+      border-radius:14px; box-shadow:0 4px 10px rgba(0,0,0,.03);
+      transition:transform .1s ease, box-shadow .15s ease, background .15s ease, opacity .2s ease;
+    }
+    .item.dragging{ opacity:.6; transform:rotate(.2deg) scale(.996) }
+    .item:hover{ box-shadow:0 10px 20px rgba(155,91,26,.12) }
+    .item input[type=checkbox]{ width:18px; height:18px; cursor:pointer }
+    .text{ line-height:1.35 }
+    .text.done{ color:#7a735f; text-decoration:line-through; text-decoration-thickness:2px }
+    .right{ display:flex; gap:8px }
+    .tag{
+      font-size:12px; padding:4px 8px; background:#fff3de; border:1px solid #f1dbb2; border-radius:999px; color:#6a4a1c
+    }
+    footer{
+      padding:14px 20px; color:var(--muted); font-size:12px; text-align:center; background:#fff9ef;
+      border-top:1px solid #f0e4cd;
+    }
+    @media (max-width:560px){
+      .controls{ padding:12px }
+      .list{ padding:6px 6px 14px 6px }
+      .item{ margin:8px 4px }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Dune unique schematic checklist</h1>
+      <p class="subtitle">Your progress saves in this browser. No account or server required.</p>
+    </header>
+
+    <section class="controls">
+      <input id="newText" type="text" placeholder="Add an item, then press Enter…" />
+      <button id="addBtn" class="btn primary">Add</button>
+      <button id="clearBtn" class="btn ghost" title="Remove all completed">Clear completed</button>
+      <button id="resetBtn" class="btn ghost" title="Remove everything">Reset all</button>
+      <button id="exportBtn" class="btn ghost" title="Download a backup JSON">Export</button>
+      <input id="importFile" type="file" accept="application/json" hidden />
+      <button id="importBtn" class="btn ghost" title="Load a backup JSON">Import</button>
+    </section>
+
+    <section class="progress">
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="pct" id="pct">0%</div>
+    </section>
+
+    <section class="list" id="list" aria-live="polite"></section>
+
+    <footer>
+      Tip. Drag items to reorder. Use Export to move your list to another device, then Import there.
+    </footer>
+  </main>
+
+  <script>
+    const KEY = "dune-unique-schematic-v1";
+    /** @type {{text:string, done:boolean, id:string, tags?:string[]}[]} */
+    let items = [];
+
+    const $ = sel => document.querySelector(sel);
+    const list = $("#list");
+    const newText = $("#newText");
+    const barFill = $("#barFill");
+    const pct = $("#pct");
+
+    function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4) }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(items)) }
+    function load(){
+      try{ items = JSON.parse(localStorage.getItem(KEY)||"[]") || [] }
+      catch{ items = [] }
+    }
+
+    function progress(){
+      const total = items.length;
+      const done = items.filter(i=>i.done).length;
+      const p = total ? Math.round(done*100/total) : 0;
+      barFill.style.inset = `0 ${100-p}% 0 0`;
+      pct.textContent = p + "%";
+    }
+
+    function render(){
+      list.innerHTML = "";
+      items.forEach((it,i)=>{
+        const row = document.createElement("div");
+        row.className = "item"; row.draggable = true; row.dataset.id = it.id;
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox"; cb.checked = it.done;
+        cb.onchange = () => { it.done = cb.checked; save(); progress(); row.querySelector(".text").classList.toggle("done", it.done); };
+
+        const text = document.createElement("div");
+        text.className = "text" + (it.done ? " done" : "");
+        text.textContent = it.text;
+
+        const right = document.createElement("div"); right.className = "right";
+        if (it.tags?.length){
+          it.tags.forEach(t=>{
+            const chip = document.createElement("span"); chip.className="tag"; chip.textContent=t; right.appendChild(chip);
+          });
+        }
+
+        const del = document.createElement("button"); del.className="btn"; del.textContent="Remove";
+        del.onclick = () => { items.splice(i,1); save(); render(); };
+
+        right.append(del);
+        row.append(cb, text, right);
+        list.append(row);
+
+        // drag events
+        row.addEventListener("dragstart", e => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", it.id); });
+        row.addEventListener("dragend",   () => row.classList.remove("dragging"));
+        row.addEventListener("dragover", e => { e.preventDefault(); });
+        row.addEventListener("drop", e => {
+          e.preventDefault();
+          const fromId = e.dataTransfer.getData("text/plain");
+          const toId = row.dataset.id;
+          if(!fromId || fromId===toId) return;
+          const fromIdx = items.findIndex(x=>x.id===fromId);
+          const toIdx   = items.findIndex(x=>x.id===toId);
+          if(fromIdx<0 || toIdx<0) return;
+          const [moved] = items.splice(fromIdx,1);
+          items.splice(toIdx,0,moved);
+          save(); render();
+        });
+      });
+      progress();
+    }
+
+    function addItem(text){
+      const t = text.trim();
+      if(!t) return;
+      items.push({ id: uid(), text: t, done:false });
+      save(); render();
+    }
+
+    $("#addBtn").onclick = () => addItem(newText.value), newText.value="";
+    newText.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ addItem(newText.value); newText.value=""; }
+    });
+
+    $("#clearBtn").onclick = () => { items = items.filter(i=>!i.done); save(); render(); };
+    $("#resetBtn").onclick = () => {
+      if(confirm("Remove all items This cannot be undone on this device.")){
+        items = []; save(); render();
+      }
+    };
+
+    $("#exportBtn").onclick = () => {
+      const blob = new Blob([JSON.stringify(items,null,2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "dune-schematics-checklist.json";
+      a.click(); URL.revokeObjectURL(a.href);
+    };
+    $("#importBtn").onclick = () => $("#importFile").click();
+    $("#importFile").addEventListener("change", async e=>{
+      const file = e.target.files[0]; if(!file) return;
+      try{
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if(!Array.isArray(data)) throw new Error("Invalid file");
+        items = data.map(x=>({ id: x.id||uid(), text:String(x.text||""), done: !!x.done, tags: Array.isArray(x.tags)?x.tags:[] }));
+        save(); render();
+      }catch(err){ alert("Import failed. Make sure you selected a valid backup JSON."); }
+      e.target.value = "";
+    });
+
+    // optional default seed once for first-time users
+    function seedOnce(){
+      if(items.length) return;
+      const seed = [
+        {text:"Ornithopter frame schematic", tags:["airframe"]},
+        {text:"Carryall winch assembly", tags:["industrial"]},
+        {text:"Spice harvester gearbox diagram", tags:["drive"]},
+        {text:"Fremen stillsuit loop check", tags:["survival"]},
+      ].map(x=>({id:uid(), text:x.text, done:false, tags:x.tags}));
+      items = seed; save();
+    }
+
+    load(); seedOnce(); render();
+  </script>
+</body>
+</html>
